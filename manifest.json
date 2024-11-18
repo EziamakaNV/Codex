@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Codex",
+  "description": "Helps developers understand new GitHub repositories using AI",
+  "version": "1.0",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "aiLanguageModelOriginTrial"
+  ],
+  "host_permissions": [
+    "https://github.com/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "images/icon-16.png",
+      "32": "images/icon-32.png",
+      "48": "images/icon-48.png",
+      "128": "images/icon-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": ["scripts/logger.js", "scripts/content.js"]
+    }
+  ],
+  "trial_tokens": ["YOUR_ORIGIN_TRIAL_TOKEN"]
+} 
