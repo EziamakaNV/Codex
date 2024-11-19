@@ -68,6 +68,47 @@ function getRepoOwnerAndName() {
     return fetchFilesRecursively();
   }
 
+  function parseMarkdown(text) {
+    if (!text) return '';
+    
+    // Remove code blocks
+    text = text.replace(/```[\s\S]*?```/g, '');
+    
+    // Remove inline code
+    text = text.replace(/`[^`]*`/g, '');
+    
+    // Remove headers
+    text = text.replace(/#{1,6}\s+/g, '');
+    
+    // Remove bold/italic
+    text = text.replace(/[*_]{1,3}(.*?)[*_]{1,3}/g, '$1');
+    
+    // Remove links but keep text
+    text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    
+    // Remove images
+    text = text.replace(/!\[[^\]]*\]\([^)]+\)/g, '');
+    
+    // Remove HTML tags
+    text = text.replace(/<[^>]*>/g, '');
+    
+    // Remove horizontal rules
+    text = text.replace(/^\s*[-*_]{3,}\s*$/gm, '');
+    
+    // Remove blockquotes
+    text = text.replace(/^\s*>\s+/gm, '');
+    
+    // Remove list markers
+    text = text.replace(/^\s*[-*+]\s+/gm, '');
+    text = text.replace(/^\s*\d+\.\s+/gm, '');
+    
+    // Clean up extra whitespace
+    text = text.replace(/\n\s*\n\s*\n/g, '\n\n');
+    text = text.trim();
+    
+    return text;
+  }
+
   (async () => {
     try {
       const { owner, name } = getRepoOwnerAndName();
@@ -82,7 +123,7 @@ function getRepoOwnerAndName() {
       return {
         title: repoData.name,
         description: repoData.description,
-        readme: "readmeContent",
+        readme: parseMarkdown(readmeContent),
         technologies: languages,
         infrastructure: infrastructure,
       };
