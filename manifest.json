@@ -6,14 +6,16 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "aiLanguageModelOriginTrial"
+    "aiLanguageModelOriginTrial",
+    "sidePanel"
   ],
   "host_permissions": [
-    "https://github.com/*"
+    "https://github.com/*",
+    "https://api.github.com/*"
   ],
   "action": {
-    "default_popup": "popup/popup.html",
-    "default_icon": {
+    "default_icon": "hello_extensions.png",
+    "icons": {
       "16": "images/icon-16.png",
       "32": "images/icon-32.png",
       "48": "images/icon-48.png",
@@ -23,11 +25,8 @@
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [
-    {
-      "matches": ["https://github.com/*"],
-      "js": ["scripts/logger.js", "scripts/content.js"]
-    }
-  ],
-  "trial_tokens": ["YOUR_ORIGIN_TRIAL_TOKEN"]
+  "side_panel": {
+    "default_path": "sidepanel/panel.html"
+  },
+  "trial_tokens": ["AlzjwhTjGhD5Wu006LOwfy7mymUhd562V3wWDJfZSYSASz6gcnTwbH/x2TGGX7Ai4w5FyCIZCSBUUyh1h7h1Rw0AAAB4eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vZmlmam5iZ2hpaGNhYmtqcGRrZ29oZWJpZmdrZG9rY3AiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElGb3JFeHRlbnNpb24iLCJleHBpcnkiOjE3NjA0ODYzOTl9"]
 } 

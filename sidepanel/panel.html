@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Codex</title>
+    <style>
+        body {
+            width: 100%;
+            margin: 0;
+            padding: 16px;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: #24292f;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        .error {
+            color: #cf222e;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #cf222e;
+            border-radius: 6px;
+            background-color: #ffebe9;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .spinner {
+            border: 3px solid #eee;
+            border-top: 3px solid #0969da;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .button-container {
+            margin: 16px 0;
+        }
+
+        button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid rgba(27, 31, 36, 0.15);
+            background-color: #0969da;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:disabled {
+            background-color: #8cb4ea;
+            cursor: not-allowed;
+        }
+
+        #analysis {
+            background: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 16px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-top: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Codex</h1>
+        
+        <div class="button-container">
+            <button id="analyze-button">Analyze Repository</button>
+            <button id="reset-button" hidden>Reset</button>
+        </div>
+
+        <div id="error" class="error" hidden></div>
+        
+        <div id="loading" class="loading" hidden>
+            <p>Analyzing repository...</p>
+            <div class="spinner"></div>
+        </div>
+        
+        <div id="results" hidden>
+            <h2>Analysis Results</h2>
+            <div id="analysis"></div>
+        </div>
+    </div>
+    <script src="panel.js"></script>
+</body>
+</html> 

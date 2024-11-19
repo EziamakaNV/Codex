@@ -1,15 +1,8 @@
-repo-explorer/
+codex/
 ├── manifest.json
 ├── background.js
-├── popup/
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js
-├── scripts/
-│   ├── content.js
-│   └── logger.js
-└── images/
-    ├── icon-16.png
-    ├── icon-32.png
-    ├── icon-48.png
-    └── icon-128.png 
+├── sidepanel/
+│   ├── panel.html
+│   └── panel.js
+└── scripts/
+    └── repoAnalyzer.js 
