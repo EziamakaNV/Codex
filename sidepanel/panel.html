@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Codex</title>
     <style>
         body {
-            width: 100%;
             margin: 0;
             padding: 16px;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
-            color: #24292f;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            background-color: #f0f2f5;
         }
 
         .container {
@@ -17,33 +17,70 @@
             margin: 0 auto;
         }
 
-        [hidden] {
-            display: none !important;
+        h1 {
+            font-size: 28px;
+            margin-bottom: 24px;
+            color: #0366d6;
+            text-align: center;
+        }
+
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+            justify-content: center;
+        }
+
+        button {
+            flex: 1 1 auto;
+            min-width: 200px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            background-color: #0366d6;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #0356b6;
+        }
+
+        button:disabled {
+            background-color: #8cb4ea;
+            cursor: not-allowed;
         }
 
         .error {
-            color: #cf222e;
-            padding: 8px;
-            margin: 8px 0;
-            border: 1px solid #cf222e;
+            margin: 16px 0;
+            padding: 16px;
+            background-color: #ffeef0;
+            color: #86181d;
+            border: 1px solid #e1e4e8;
             border-radius: 6px;
-            background-color: #ffebe9;
         }
 
         .loading {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 16px;
-            margin: 16px 0;
+            margin: 32px 0;
+        }
+
+        .loading p {
+            font-size: 18px;
+            margin-bottom: 16px;
         }
 
         .spinner {
-            border: 3px solid #eee;
-            border-top: 3px solid #0969da;
+            width: 48px;
+            height: 48px;
+            border: 6px solid #ccc;
+            border-top-color: #0366d6;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
             animation: spin 1s linear infinite;
         }
 
@@ -52,42 +89,69 @@
             100% { transform: rotate(360deg); }
         }
 
-        .button-container {
-            margin: 16px 0;
-        }
-
-        button {
-            padding: 8px 16px;
+        #results {
+            background-color: #fff;
+            padding: 24px;
             border-radius: 6px;
-            border: 1px solid rgba(27, 31, 36, 0.15);
-            background-color: #0969da;
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        button:disabled {
-            background-color: #8cb4ea;
-            cursor: not-allowed;
+        #results h2 {
+            margin-top: 0;
+            color: #24292e;
         }
 
         #analysis {
-            background: #f6f8fa;
-            border-radius: 6px;
-            padding: 16px;
-            margin-top: 16px;
-            line-height: 1.5;
-            font-size: 14px;
+            white-space: pre-wrap;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #24292e;
         }
 
-        h1 {
-            font-size: 24px;
-            margin-bottom: 16px;
+        [hidden] {
+            display: none !important;
         }
 
-        h2 {
-            font-size: 20px;
+        /* File selection styles */
+        #file-selection {
             margin-top: 24px;
+        }
+
+        #file-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 8px;
+            background-color: #fafbfc;
+        }
+
+        #file-list div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        #file-list label {
+            margin-left: 8px;
+            color: #0366d6;
+            cursor: pointer;
+        }
+
+        #fetch-explanation {
+            margin-top: 16px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        #fetch-explanation:hover {
+            background-color: #218838;
         }
     </style>
 </head>
@@ -96,20 +160,28 @@
         <h1>Codex</h1>
         
         <div class="button-container">
-            <button id="analyze-button">Analyze Repository</button>
-            <button id="reset-button" hidden>Reset</button>
+            <button id="analyze-built-in">Analyze with Built-in Model</button>
+            <button id="analyze-api">Analyze with External API</button>
+            <button id="explain-file">Explain Current File</button>
         </div>
 
         <div id="error" class="error" hidden></div>
         
         <div id="loading" class="loading" hidden>
-            <p>Analyzing repository...</p>
+            <p>Processing...</p>
             <div class="spinner"></div>
         </div>
         
         <div id="results" hidden>
             <h2>Analysis Results</h2>
             <div id="analysis"></div>
+            <button id="reset-button">Reset</button>
+        </div>
+
+        <div id="file-selection" hidden>
+            <h2>Select Additional Files</h2>
+            <div id="file-list"></div>
+            <button id="fetch-explanation">Get Explanation</button>
         </div>
     </div>
     <script src="panel.js"></script>

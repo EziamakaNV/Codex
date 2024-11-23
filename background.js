@@ -25,7 +25,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         "16": isGitHubRepo ? "images/icon-16.png" : "images/icon-16.png",
         "32": isGitHubRepo ? "images/icon-32.png" : "images/icon-32.png",
         "48": isGitHubRepo ? "images/icon-48.png" : "images/icon-48.png",
-        "128": isGitHubRepo ? "images/icon-128.png" : "images/icon-128.png"
+        "128": isGitHubRepo ? "images/icon-148.png" : "images/icon-148.png"
       },
       tabId: tabId
     });
