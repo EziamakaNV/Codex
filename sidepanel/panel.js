@@ -1,4 +1,5 @@
 let session = null;
+let fileData = null;
 
 // UI Elements
 const analyzeBuiltInButton = document.getElementById('analyze-built-in');
@@ -12,6 +13,8 @@ const analysisElement = document.getElementById('analysis');
 const fileSelectionElement = document.getElementById('file-selection');
 const fileListElement = document.getElementById('file-list');
 const fetchExplanationButton = document.getElementById('fetch-explanation');
+const additionalFilesPromptElement = document.getElementById('additional-files-prompt');
+const additionalFilesButton = document.getElementById('additional-files-button');
 
 async function initializeAI() {
     try {
@@ -167,7 +170,7 @@ async function analyzeWithApi(prompt) {
     return data.result;
 }
 
-// New function to explain the current file
+// Updated function to explain the current file using GitHub API for fetching file content
 async function explainCurrentFile() {
     try {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -182,57 +185,107 @@ async function explainCurrentFile() {
         hide(explainFileButton);
         hide(errorElement);
         hide(resultsElement);
+        hide(fileSelectionElement);
 
-        // Check if on a file page
-        const isFilePage = tab.url.includes('/blob/');
-        if (!isFilePage) {
-            throw new Error('Please navigate to a specific file on GitHub');
-        }
-
-        // Get file content and available files (using content script)
-        const [fileData] = await chrome.scripting.executeScript({
+        // Get repository info and file path
+        const [result] = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
             files: ['scripts/fileAnalyzer.js']
         });
 
-        if (!fileData.result) {
+        if (!result || !result.result) {
             throw new Error('Failed to extract file data');
         }
 
-        // Show file selection UI if there are additional files
-        if (fileData.result.availableFiles.length > 0) {
-            populateFileList(fileData.result.availableFiles);
-            show(fileSelectionElement);
-            // Store the current file content
-            window.currentFileContent = fileData.result.content;
-        } else {
-            // If no additional files, proceed with explanation
-            await getExplanation([fileData.result.content]);
+        fileData = result.result;
+        console.debug('[Panel] File data:', fileData);
+
+        // Fetch the raw content of the current file using the GitHub API
+        const currentFileContent = await fetchFileContent(fileData.owner, fileData.repo, fileData.branch, fileData.filePath);
+
+        window.currentFileContent = currentFileContent;
+
+        // Proceed with explanation immediately
+        await getExplanation([window.currentFileContent]);
+
+        // After explanation, if there are additional files, offer the option to select them
+        const availableFiles = await fetchRepoFiles(fileData.owner, fileData.repo, fileData.branch);
+
+        if (availableFiles.length > 0) {
+            fileData.availableFiles = availableFiles;
+            show(additionalFilesPromptElement);
         }
 
+        show(resetButton);
+
     } catch (error) {
-        console.error('File explanation error:', error);
+        console.error('[Panel] File explanation error:', error);
         showError(error.message);
         show(analyzeBuiltInButton);
         show(analyzeApiButton);
         show(explainFileButton);
+    } finally {
+        hide(loadingElement);
     }
 }
 
-// Fetch explanation with selected files
-async function getExplanation(selectedFileContents) {
+// Function to fetch the raw content of a file using the GitHub API
+async function fetchFileContent(owner, repo, branch, filePath) {
     try {
-        const combinedContent = selectedFileContents.join('\n\n');
+        console.debug(`[Panel] Fetching content for ${filePath} in ${owner}/${repo}@${branch}`);
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}?ref=${encodeURIComponent(branch)}`;
+        const response = await fetch(url, {
+            headers: {
+                'Accept': 'application/vnd.github.v3.raw'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch ${filePath}: ${response.status} ${response.statusText}`);
+        }
+
+        const content = await response.text();
+        console.debug(`[Panel] Fetched content length for ${filePath}:`, content.length);
+        return content;
+    } catch (error) {
+        console.error(`[Panel] Error fetching ${filePath}:`, error);
+        throw error;
+    }
+}
+
+// Function to fetch the list of files in the repository
+async function fetchRepoFiles(owner, repo, branch) {
+    try {
+        console.debug(`[Panel] Fetching repo files for ${owner}/${repo}@${branch}`);
+        const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch repository files: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        const files = data.tree.filter(item => item.type === 'blob');
+        console.debug(`[Panel] Found ${files.length} files in repository`);
+        return files;
+    } catch (error) {
+        console.error('[Panel] Failed to fetch repository files:', error);
+        return [];
+    }
+}
+
+// Function to get the explanation from the AI model
+async function getExplanation(fileContents) {
+    try {
+        const combinedContent = fileContents.join('\n\n');
         const prompt = `
             Explain the following code in detail:
-            
+
             ${combinedContent}
-            
+
             Highlight the key functionalities and how the components interact.
-            Format the response in markdown.
+            Format the response in plain English with no markdown, no special characters, no HTML. Just add paragraphs and line breaks where appropriate.
         `;
 
-        // Use built-in model for explanation (could add option to use API)
+        // Use built-in model for explanation
         const response = await runPrompt(prompt);
         showResults(response);
         show(resetButton);
@@ -245,7 +298,7 @@ async function getExplanation(selectedFileContents) {
     }
 }
 
-// Populate the file list for selection
+// Populating the file list for selection
 function populateFileList(files) {
     fileListElement.innerHTML = '';
     files.forEach(file => {
@@ -266,7 +319,14 @@ function populateFileList(files) {
     });
 }
 
-// Event listener for fetching explanation
+// Event listener for the 'Select Additional Files' button
+additionalFilesButton.addEventListener('click', () => {
+    populateFileList(fileData.availableFiles);
+    show(fileSelectionElement);
+    hide(additionalFilesPromptElement);
+});
+
+// Adjust the fetchExplanationButton event listener
 fetchExplanationButton.addEventListener('click', async () => {
     try {
         show(loadingElement);
@@ -276,59 +336,28 @@ fetchExplanationButton.addEventListener('click', async () => {
         const selectedFiles = Array.from(fileListElement.querySelectorAll('input[type="checkbox"]:checked'))
             .map(checkbox => checkbox.value);
 
-        // Fetch content of selected files using background script
+        // Fetch content of selected files
         const fileContents = [window.currentFileContent]; // Start with current file content
 
         if (selectedFiles.length > 0) {
-            const additionalContents = await fetchSelectedFilesContent(selectedFiles);
+            const additionalContents = await Promise.all(selectedFiles.map(async (filePath) => {
+                return await fetchFileContent(fileData.owner, fileData.repo, fileData.branch, filePath);
+            }));
             fileContents.push(...additionalContents);
         }
 
+        // Get combined explanation
         await getExplanation(fileContents);
 
     } catch (error) {
         console.error('Error fetching explanation:', error);
         showError(error.message);
     } finally {
+        hide(loadingElement);
         hide(fileSelectionElement);
+        show(resetButton);
     }
 });
-
-// Fetch content of selected files using GitHub API
-async function fetchSelectedFilesContent(filePaths) {
-    // You need to generate a GitHub Personal Access Token and store it securely
-    const GITHUB_TOKEN = 'YOUR_GITHUB_TOKEN';
-
-    // Get repo details from current tab URL
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const repoMatch = tab.url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-    if (!repoMatch) {
-        throw new Error('Failed to parse repository information');
-    }
-
-    const owner = repoMatch[1];
-    const repo = repoMatch[2];
-
-    const fileContents = [];
-
-    for (const path of filePaths) {
-        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-            headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Accept': 'application/vnd.github.v3.raw'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch ${path}`);
-        }
-
-        const content = await response.text();
-        fileContents.push(`// File: ${path}\n${content}`);
-    }
-
-    return fileContents;
-}
 
 function showError(message) {
     errorElement.textContent = message;
