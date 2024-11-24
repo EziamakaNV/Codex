@@ -125,7 +125,7 @@ async function analyzeRepo(useBuiltInModel) {
 
             Format the response in plain english with no markdown, no special characters, no html. Just add paragraphs and line breaks where appropriate.
         `;
-
+        console.log(prompt);
         let response;
         if (useBuiltInModel) {
             // Use built-in model
@@ -150,16 +150,14 @@ async function analyzeRepo(useBuiltInModel) {
 
 async function analyzeWithApi(prompt) {
     // Replace with your API endpoint and API key
-    const API_ENDPOINT = 'https://your-api-endpoint.com/analyze';
-    const API_KEY = 'YOUR_API_KEY';
+    const API_ENDPOINT = 'http://localhost:8082/analyze-with-gemini';
 
     const response = await fetch(API_ENDPOINT, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_KEY}`,
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt })
     });
 
     if (!response.ok) {
@@ -167,7 +165,7 @@ async function analyzeWithApi(prompt) {
     }
 
     const data = await response.json();
-    return data.result;
+    return data;
 }
 
 // Updated function to explain the current file using GitHub API for fetching file content
