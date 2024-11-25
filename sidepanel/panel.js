@@ -41,8 +41,8 @@ async function runPrompt(prompt) {
                 systemPrompt: 'You are a helpful technical assistant that analyzes GitHub repositories.'
             });
         }
-        console.debug('Running prompt:', prompt.substring(0, 100) + '...');
-        return await session.prompt(prompt);
+        console.log('Running prompt:', prompt.substring(0, 100) + '...');
+        return await session.prompt(prompt.substring(0, 2500)); // limiting due to token limit
     } catch (error) {
         console.error('Prompt execution failed:', error);
         await reset();
@@ -101,13 +101,14 @@ async function analyzeRepo(useBuiltInModel) {
             throw new Error('Failed to extract repository data');
         }
 
-        console.debug('Repository data extracted successfully:', {
+        console.log('Repository data extracted successfully:', {
             title: repoData.result.title,
             technologies: repoData.result.technologies.length
         });
 
         const prompt = `
-            Analyze this GitHub repository and provide a concise summary:
+            Analyze this GitHub repository and provide a concise summary
+            Format the response in plain english with no markdown, no special characters, no html. Just add paragraphs and line breaks where appropriate:
             
             Repository: ${repoData.result.title}
             Description: ${repoData.result.description}
@@ -122,8 +123,6 @@ async function analyzeRepo(useBuiltInModel) {
             2. Main features and functionality
             3. Technical architecture (if infrastructure details are available)
             4. Getting started guide
-
-            Format the response in plain english with no markdown, no special characters, no html. Just add paragraphs and line breaks where appropriate.
         `;
         console.log(prompt);
         let response;
@@ -191,12 +190,14 @@ async function explainCurrentFile() {
             files: ['scripts/fileAnalyzer.js']
         });
 
+        console.log(result);
+
         if (!result || !result.result) {
             throw new Error('Failed to extract file data');
         }
 
         fileData = result.result;
-        console.debug('[Panel] File data:', fileData);
+        console.log('[Panel] File data:', fileData);
 
         // Fetch the raw content of the current file using the GitHub API
         const currentFileContent = await fetchFileContent(fileData.owner, fileData.repo, fileData.branch, fileData.filePath);
@@ -230,7 +231,7 @@ async function explainCurrentFile() {
 // Function to fetch the raw content of a file using the GitHub API
 async function fetchFileContent(owner, repo, branch, filePath) {
     try {
-        console.debug(`[Panel] Fetching content for ${filePath} in ${owner}/${repo}@${branch}`);
+        console.log(`[Panel] Fetching content for ${filePath} in ${owner}/${repo}@${branch}`);
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}?ref=${encodeURIComponent(branch)}`;
         const response = await fetch(url, {
             headers: {
@@ -243,7 +244,7 @@ async function fetchFileContent(owner, repo, branch, filePath) {
         }
 
         const content = await response.text();
-        console.debug(`[Panel] Fetched content length for ${filePath}:`, content.length);
+        console.log(`[Panel] Fetched content length for ${filePath}:`, content.length);
         return content;
     } catch (error) {
         console.error(`[Panel] Error fetching ${filePath}:`, error);
@@ -254,7 +255,7 @@ async function fetchFileContent(owner, repo, branch, filePath) {
 // Function to fetch the list of files in the repository
 async function fetchRepoFiles(owner, repo, branch) {
     try {
-        console.debug(`[Panel] Fetching repo files for ${owner}/${repo}@${branch}`);
+        console.log(`[Panel] Fetching repo files for ${owner}/${repo}@${branch}`);
         const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`;
         const response = await fetch(url);
         if (!response.ok) {
@@ -262,7 +263,7 @@ async function fetchRepoFiles(owner, repo, branch) {
         }
         const data = await response.json();
         const files = data.tree.filter(item => item.type === 'blob');
-        console.debug(`[Panel] Found ${files.length} files in repository`);
+        console.log(`[Panel] Found ${files.length} files in repository`);
         return files;
     } catch (error) {
         console.error('[Panel] Failed to fetch repository files:', error);
@@ -275,12 +276,13 @@ async function getExplanation(fileContents) {
     try {
         const combinedContent = fileContents.join('\n\n');
         const prompt = `
-            Explain the following code in detail:
-
-            ${combinedContent}
-
+            Explain the following code in detail
             Highlight the key functionalities and how the components interact.
-            Format the response in plain English with no markdown, no special characters, no HTML. Just add paragraphs and line breaks where appropriate.
+            Format the response in plain English with no markdown, no special characters, no HTML:
+            ///////////////////////////////////////////
+            ${combinedContent}
+            ///////////////////////////////////////////
+            
         `;
 
         // Use built-in model for explanation

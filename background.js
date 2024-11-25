@@ -16,21 +16,21 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 });
 
-chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
-  if (!tab.url) return;
-  if (tab.url?.startsWith('https://github.com/')) {
-    await chrome.sidePanel.setOptions({
-      tabId,
-      enabled: true
-    });
-  } else {
-    // Disables the side panel on all other sites
-    await chrome.sidePanel.setOptions({
-      tabId,
-      enabled: false
-    });
-  }
-});
+// chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
+//   if (!tab.url) return;
+//   if (tab.url?.startsWith('https://github.com/')) {
+//     await chrome.sidePanel.setOptions({
+//       tabId,
+//       enabled: true
+//     });
+//   } else {
+//     // Disables the side panel on all other sites
+//     await chrome.sidePanel.setOptions({
+//       tabId,
+//       enabled: false
+//     });
+//   }
+// });
 
 // Enable/disable extension icon based on URL
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
