@@ -15,6 +15,15 @@ const fileListElement = document.getElementById('file-list');
 const fetchExplanationButton = document.getElementById('fetch-explanation');
 const additionalFilesPromptElement = document.getElementById('additional-files-prompt');
 const additionalFilesButton = document.getElementById('additional-files-button');
+const chatContainer = document.getElementById('chat-container');
+const chatWindow = document.getElementById('chat-window');
+const chatInput = document.getElementById('chat-input');
+const sendButton = document.getElementById('send-button');
+const modal = document.getElementById('modal');
+
+// Variables
+let chatSession = null;
+let contextData = ''; // To hold additional context like files
 
 async function initializeAI() {
     try {
@@ -42,7 +51,7 @@ async function runPrompt(prompt) {
             });
         }
         console.log('Running prompt:', prompt.substring(0, 100) + '...');
-        return await session.prompt(prompt.substring(0, 2500)); // limiting due to token limit
+        return await session.prompt(prompt.substring(0, 1500)); // limiting due to token limit
     } catch (error) {
         console.error('Prompt execution failed:', error);
         await reset();
@@ -138,6 +147,9 @@ async function analyzeRepo(useBuiltInModel) {
         showResults(response);
         show(resetButton);
 
+        // After analysis, set contextData for chat
+        contextData = `Repository Analysis:\n${response}`;
+
     } catch (error) {
         console.error('Repository analysis failed:', error);
         showError(error.message);
@@ -216,6 +228,9 @@ async function explainCurrentFile() {
         }
 
         show(resetButton);
+
+        // After explanation, set contextData for chat
+        contextData = `File Explanation:\n${analysisElement.textContent}`;
 
     } catch (error) {
         console.error('[Panel] File explanation error:', error);
@@ -378,10 +393,106 @@ function hide(element) {
     element.setAttribute('hidden', '');
 }
 
+// Function to start chat session
+function startChat() {
+    hide(modal);
+    show(chatContainer);
+    show(resetButton);
+    resetButton.addEventListener('click', resetChat);
+}
+
+// Event listener for send button
+sendButton.addEventListener('click', sendMessage);
+chatInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        sendMessage();
+    }
+});
+
+async function sendMessage() {
+    const userMessage = chatInput.value.trim();
+    if (!userMessage) return;
+
+    // Display user message
+    addMessageToChat('User', userMessage);
+    chatInput.value = '';
+
+    try {
+        // Initialize session if not already done
+        if (!chatSession) {
+            chatSession = await chrome.aiOriginTrial.languageModel.create({
+                systemPrompt: 'You are a helpful assistant for GitHub repositories.'
+            });
+        }
+
+        // Prepare prompt with context if any
+        let prompt = userMessage;
+        if (contextData) {
+            prompt += `\n\nContext:\n${contextData}`;
+        }
+
+        // Send message to AI model
+        const response = await chatSession.prompt(prompt);
+
+        // Display AI response
+        addMessageToChat('AI', response);
+
+    } catch (error) {
+        console.error('Chat error:', error);
+        addMessageToChat('Error', 'An error occurred while processing your request.');
+    }
+}
+
+// Function to add message to chat window
+function addMessageToChat(sender, message) {
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('chat-message', sender.toLowerCase());
+    messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+    chatWindow.appendChild(messageElement);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+// Function to reset chat
+function resetChat() {
+    chatSession = null;
+    chatWindow.innerHTML = '';
+    hide(chatContainer);
+    show(modal);
+    hide(resetButton);
+}
+
+// Modify button event listeners to start chat
+analyzeBuiltInButton.addEventListener('click', async () => {
+    try {
+        await analyzeRepo(true); // Existing function
+        startChat();
+    } catch (error) {
+        showError(error.message);
+    }
+});
+
+analyzeApiButton.addEventListener('click', async () => {
+    try {
+        await analyzeRepo(false); // Existing function
+        startChat();
+    } catch (error) {
+        showError(error.message);
+    }
+});
+
+explainFileButton.addEventListener('click', async () => {
+    try {
+        await explainCurrentFile(); // Existing function
+        startChat();
+    } catch (error) {
+        showError(error.message);
+    }
+});
+
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    analyzeBuiltInButton.addEventListener('click', () => analyzeRepo(true));
-    analyzeApiButton.addEventListener('click', () => analyzeRepo(false));
-    explainFileButton.addEventListener('click', explainCurrentFile);
-    resetButton.addEventListener('click', reset);
-}); 
+// document.addEventListener('DOMContentLoaded', () => {
+//     analyzeBuiltInButton.addEventListener('click', () => analyzeRepo(true));
+//     analyzeApiButton.addEventListener('click', () => analyzeRepo(false));
+//     explainFileButton.addEventListener('click', explainCurrentFile);
+//     resetButton.addEventListener('click', reset);
+// }); 

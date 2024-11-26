@@ -153,25 +153,125 @@
         #fetch-explanation:hover {
             background-color: #218838;
         }
+
+        /* Add styles for the additional files prompt and button */
+        #additional-files-prompt {
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        #additional-files-button {
+            padding: 10px 20px;
+            background-color: #0366d6;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        #additional-files-button:hover {
+            background-color: #0356b6;
+        }
+
+        /* Styles for the chat interface */
+        #chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        #chat-window {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+        }
+
+        .chat-message.user strong {
+            color: #0366d6;
+        }
+
+        .chat-message.assistant strong {
+            color: #6a737d;
+        }
+
+        #chat-input-container {
+            display: flex;
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px 0 0 6px;
+            font-size: 14px;
+        }
+
+        #send-button {
+            padding: 10px 20px;
+            border: 1px solid #e1e4e8;
+            border-left: none;
+            background-color: #28a745;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 0 6px 6px 0;
+            font-size: 14px;
+        }
+
+        #send-button:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Codex</h1>
-        
-        <div class="button-container">
-            <button id="analyze-built-in">Get Repository Summary with Built-in Model</button>
-            <button id="analyze-api">Get Repository Summary with External Model (Offers more detailed analysis)</button>
-            <button id="explain-file">Explain Current File</button>
+
+        <!-- Modal for buttons -->
+        <div id="modal">
+            <h1>Codex</h1>
+            <div class="modal-content">
+                <div class="button-item">
+                    <button id="analyze-built-in">
+                        Analyze with Built-in Model
+                    </button>
+                </div>
+                <div class="button-item">
+                    <button id="analyze-api">
+                        Analyze with External API
+                    </button>
+                </div>
+                <div class="button-item">
+                    <button id="explain-file">
+                        Explain Current File
+                    </button>
+                </div>
+            </div>
         </div>
 
+        <!-- Chat interface -->
+        <div id="chat-container" hidden>
+            <div id="chat-window"></div>
+            <div id="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Type your message here...">
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+
+        <!-- Error and Loading Elements -->
         <div id="error" class="error" hidden></div>
-        
         <div id="loading" class="loading" hidden>
             <p>Processing...</p>
             <div class="spinner"></div>
         </div>
-        
         <div id="results" hidden>
             <h2>Analysis Results</h2>
             <div id="analysis"></div>

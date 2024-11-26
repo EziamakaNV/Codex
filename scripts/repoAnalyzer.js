@@ -142,12 +142,16 @@ function getRepoOwnerAndName() {
         fetchInfraFiles(owner, name),
       ]);
   
+      // Collect files data for context
+      const filesData = await fetchFilesContent(owner, name, infrastructure);
+  
       return {
         title: repoData.name,
         description: repoData.description,
         readme: parseMarkdown(readmeContent),
         technologies: languages,
         infrastructure: infrastructure,
+        filesContent: filesData,
       };
     } catch (error) {
       console.error(error);
@@ -158,7 +162,35 @@ function getRepoOwnerAndName() {
         readme: '',
         technologies: [],
         infrastructure: [],
+        filesContent: {},
       };
     }
   })();
+  
+  // New function to fetch files content
+  async function fetchFilesContent(owner, repo, filePaths) {
+    const fileContents = {};
+    for (const filePath of filePaths) {
+        try {
+            const content = await fetchFileContent(owner, repo, filePath);
+            fileContents[filePath] = content;
+        } catch (error) {
+            console.error(`Failed to fetch content for ${filePath}:`, error);
+        }
+    }
+    return fileContents;
+  }
+
+  async function fetchFileContent(owner, repo, filePath) {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}`;
+    const response = await fetch(url, {
+        headers: {
+            'Accept': 'application/vnd.github.v3.raw'
+        }
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to fetch ${filePath}: ${response.status} ${response.statusText}`);
+    }
+    return await response.text();
+  }
   
