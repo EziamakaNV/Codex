@@ -16,19 +16,48 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 });
 
+// chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
+//   if (!tab.url) return;
+//   if (tab.url?.startsWith('https://github.com/')) {
+//     await chrome.sidePanel.setOptions({
+//       tabId,
+//       enabled: true
+//     });
+//   } else {
+//     // Disables the side panel on all other sites
+//     await chrome.sidePanel.setOptions({
+//       tabId,
+//       enabled: false
+//     });
+//   }
+// });
+
 // Enable/disable extension icon based on URL
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete') {
-    const isGitHubRepo = tab.url?.startsWith('https://github.com/');
+    const isGitHubUrl = tab.url?.startsWith('https://github.com/');
+    const isGitHubFile = tab.url?.match(/^https:\/\/github\.com\/[^/]+\/[^/]+\/blob\/.+/);
+    const isGitHubRepo = tab.url?.match(/^https:\/\/github\.com\/[^/]+\/[^/]+(?:\/tree\/[^/]+)?$/);
+
+    // Enable the extension icon only on valid GitHub pages
+    const shouldEnable = isGitHubFile || isGitHubRepo;
+
     chrome.action.setIcon({
       path: {
-        "16": isGitHubRepo ? "images/icon-16.png" : "images/icon-16.png",
-        "32": isGitHubRepo ? "images/icon-32.png" : "images/icon-32.png",
-        "48": isGitHubRepo ? "images/icon-48.png" : "images/icon-48.png",
-        "128": isGitHubRepo ? "images/icon-128.png" : "images/icon-128.png"
+        "16": shouldEnable ? "images/icon16.png" : "images/icon16.png",
+        "19": shouldEnable ? "images/icon19.png" : "images/icon19.png",
+        "32": shouldEnable ? "images/icon32.png" : "images/icon32.png",
+        "38": shouldEnable ? "images/icon38.png" : "images/icon38.png",
+        "48": shouldEnable ? "images/icon48.png" : "images/icon48.png",
+        "128": shouldEnable ? "images/icon128.png" : "images/icon128.png"
       },
       tabId: tabId
     });
-    //chrome.action.setEnabled(tabId, isGitHubRepo);
+
+    if(shouldEnable) {
+      chrome.action.enable(tabId);
+    } else {
+      chrome.action.disable(tabId);
+    }
   }
 }); 

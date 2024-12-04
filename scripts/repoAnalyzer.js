@@ -6,33 +6,54 @@ function getRepoOwnerAndName() {
     };
   }
   async function fetchRepoData(owner, repo) {
-    const repoUrl = `https://api.github.com/repos/${owner}/${repo}`;
-    const response = await fetch(repoUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch repository data: ${response.status}`);
+    try {
+      const repoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+      const response = await fetch(repoUrl);
+      if (!response.ok) {
+        console.error(`[fetchRepoData] Failed with status: ${response.status}`);
+        throw new Error(`Failed to fetch repository data: ${response.status}`);
+      }
+      console.info('[fetchRepoData] Successfully fetched repo data');
+      return response.json();
+    } catch (error) {
+      console.error('[fetchRepoData] Error:', error.message);
+      throw error;
     }
-    return response.json();
   }
 
   async function fetchReadme(owner, repo) {
-    const readmeUrl = `https://api.github.com/repos/${owner}/${repo}/readme`;
-    const response = await fetch(readmeUrl, {
-      headers: { Accept: 'application/vnd.github.VERSION.raw' },
-    });
-    if (!response.ok) {
-      return ''; // README might not exist
+    try {
+      const readmeUrl = `https://api.github.com/repos/${owner}/${repo}/readme`;
+      const response = await fetch(readmeUrl, {
+        headers: { Accept: 'application/vnd.github.VERSION.raw' },
+      });
+      if (!response.ok) {
+        console.info('[fetchReadme] No README found');
+        return ''; // README might not exist
+      }
+      console.info('[fetchReadme] Successfully fetched README');
+      return response.text();
+    } catch (error) {
+      console.error('[fetchReadme] Error:', error.message);
+      throw error;
     }
-    return response.text();
   }
 
   async function fetchLanguages(owner, repo) {
-    const languagesUrl = `https://api.github.com/repos/${owner}/${repo}/languages`;
-    const response = await fetch(languagesUrl);
-    if (!response.ok) {
-      return [];
+    try {
+      const languagesUrl = `https://api.github.com/repos/${owner}/${repo}/languages`;
+      const response = await fetch(languagesUrl);
+      if (!response.ok) {
+        console.error(`[fetchLanguages] Failed with status: ${response.status}`);
+        return [];
+      }
+      const languagesData = await response.json();
+      console.info('[fetchLanguages] Successfully fetched languages');
+      return Object.keys(languagesData);
+    } catch (error) {
+      console.error('[fetchLanguages] Error:', error.message);
+      throw error;
     }
-    const languagesData = await response.json();
-    return Object.keys(languagesData);
   }
   async function fetchInfraFiles(owner, repo) {
     const infraPatterns = [
@@ -112,6 +133,7 @@ function getRepoOwnerAndName() {
   (async () => {
     try {
       const { owner, name } = getRepoOwnerAndName();
+      console.info('[main] Starting repository analysis for', owner + '/' + name);
   
       const [repoData, readmeContent, languages, infrastructure] = await Promise.all([
         fetchRepoData(owner, name),
@@ -120,12 +142,16 @@ function getRepoOwnerAndName() {
         fetchInfraFiles(owner, name),
       ]);
   
+      // Collect files data for context
+      const filesData = await fetchFilesContent(owner, name, infrastructure);
+  
       return {
         title: repoData.name,
         description: repoData.description,
         readme: parseMarkdown(readmeContent),
         technologies: languages,
         infrastructure: infrastructure,
+        filesContent: filesData,
       };
     } catch (error) {
       console.error(error);
@@ -136,7 +162,35 @@ function getRepoOwnerAndName() {
         readme: '',
         technologies: [],
         infrastructure: [],
+        filesContent: {},
       };
     }
   })();
+  
+  // New function to fetch files content
+  async function fetchFilesContent(owner, repo, filePaths) {
+    const fileContents = {};
+    for (const filePath of filePaths) {
+        try {
+            const content = await fetchFileContent(owner, repo, filePath);
+            fileContents[filePath] = content;
+        } catch (error) {
+            console.error(`Failed to fetch content for ${filePath}:`, error);
+        }
+    }
+    return fileContents;
+  }
+
+  async function fetchFileContent(owner, repo, filePath) {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}`;
+    const response = await fetch(url, {
+        headers: {
+            'Accept': 'application/vnd.github.v3.raw'
+        }
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to fetch ${filePath}: ${response.status} ${response.statusText}`);
+    }
+    return await response.text();
+  }
   

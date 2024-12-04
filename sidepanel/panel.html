@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Codex</title>
     <style>
         body {
-            width: 100%;
             margin: 0;
             padding: 16px;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
-            color: #24292f;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #000;
+            background-color: #fff;
         }
 
         .container {
@@ -17,34 +17,242 @@
             margin: 0 auto;
         }
 
-        [hidden] {
-            display: none !important;
+        h1, h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #000;
         }
 
-        .error {
-            color: #cf222e;
-            padding: 8px;
-            margin: 8px 0;
-            border: 1px solid #cf222e;
-            border-radius: 6px;
-            background-color: #ffebe9;
+        /* Card-like sections similar to Performance/Safety panels */
+        .panel-section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
-        .loading {
+        /* Toggle switch styling like the battery efficiency mode */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            border-radius: 20px;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: #0078D4;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Update button styles to match Edge's blue theme */
+        button {
+            background-color: #0078D4;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #006CBE;
+        }
+
+        /* Chat container updates */
+        #chat-container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            padding: 16px;
+        }
+
+        #chat-window {
+            background-color: #fff;
+            border: 1px solid #E1E1E1;
+            border-radius: 4px;
+        }
+
+        #chat-input {
+            border: 1px solid #E1E1E1;
+            border-radius: 4px;
+            padding: 8px 12px;
+        }
+
+        /* Status indicators */
+        .status {
+            color: #6E7780;
+            font-size: 14px;
+        }
+
+        .status.healthy {
+            color: #107C10;
+        }
+
+        .status.inactive {
+            color: #6E7780;
+        }
+
+        /* ... keep existing animation and utility classes ... */
+
+        /* Modal and button layout improvements */
+        .modal-content {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .button-item {
+            width: 100%;
+        }
+
+        .button-item button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background-color: #f5f5f5;
+            color: #000;
+            border: 1px solid #e1e1e1;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .button-item button:hover {
+            background-color: #e5e5e5;
+            border-color: #d1d1d1;
+        }
+
+        .button-item button:after {
+            content: "→";
+            font-size: 18px;
+            opacity: 0.7;
+        }
+
+        /* Action buttons (like Send, Reset) */
+        .action-button {
+            background-color: #0078D4;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            min-width: 100px;
+        }
+
+        .action-button:hover {
+            background-color: #006CBE;
+        }
+
+        /* Chat input container improvements */
+        #chat-input-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+
+        /* Results section improvements */
+        #results {
+            margin-top: 24px;
+        }
+
+        #additional-files-prompt {
+            margin-top: 16px;
+            padding: 16px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e1e1e1;
+        }
+
+        /* Loading Modal Styles */
+        .loading-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 16px;
-            margin: 16px 0;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .loading-text {
+            color: #0078D4;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; text-shadow: 0 0 10px rgba(0, 120, 212, 0.5); }
+            50% { opacity: 0.5; text-shadow: none; }
+            100% { opacity: 1; text-shadow: 0 0 10px rgba(0, 120, 212, 0.5); }
         }
 
         .spinner {
-            border: 3px solid #eee;
-            border-top: 3px solid #0969da;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0078D4;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
             animation: spin 1s linear infinite;
+            margin: 0 auto;
         }
 
         @keyframes spin {
@@ -52,64 +260,73 @@
             100% { transform: rotate(360deg); }
         }
 
-        .button-container {
-            margin: 16px 0;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
-        button {
-            padding: 8px 16px;
-            border-radius: 6px;
-            border: 1px solid rgba(27, 31, 36, 0.15);
-            background-color: #0969da;
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        button:disabled {
-            background-color: #8cb4ea;
-            cursor: not-allowed;
-        }
-
-        #analysis {
-            background: #f6f8fa;
-            border-radius: 6px;
-            padding: 16px;
-            margin-top: 16px;
-            line-height: 1.5;
-            font-size: 14px;
-        }
-
-        h1 {
-            font-size: 24px;
-            margin-bottom: 16px;
-        }
-
-        h2 {
-            font-size: 20px;
-            margin-top: 24px;
+        .loading-modal {
+            animation: fadeIn 0.2s ease-in-out;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Codex</h1>
-        
-        <div class="button-container">
-            <button id="analyze-button">Analyze Repository</button>
-            <button id="reset-button" hidden>Reset</button>
+
+        <!-- Modal for buttons -->
+        <div id="modal">
+            <h1>Codex</h1>
+            <div class="modal-content">
+                <div class="button-item">
+                    <button id="analyze-built-in">
+                        Get repo summary with Built-in Model
+                    </button>
+                </div>
+                <div class="button-item">
+                    <button id="analyze-api">
+                        Get detailed repo summary with External model (Gemini)
+                    </button>
+                </div>
+                <div class="button-item">
+                    <button id="explain-file">
+                        Explain Current File
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div id="error" class="error" hidden></div>
         
+
+        <!-- Error and Loading Elements -->
+        <div id="error" class="error" hidden></div>
         <div id="loading" class="loading" hidden>
-            <p>Analyzing repository...</p>
+            <p>Processing...</p>
             <div class="spinner"></div>
         </div>
-        
         <div id="results" hidden>
             <h2>Analysis Results</h2>
             <div id="analysis"></div>
+            <button id="reset-button" class="action-button">Reset</button>
+
+            <div id="additional-files-prompt" hidden>
+                <p>Would you like to select additional files for more context?</p>
+                <button id="additional-files-button" class="action-button">Select Additional Files</button>
+            </div>
+        </div>
+
+        <div id="file-selection" hidden>
+            <h2>Select Additional Files</h2>
+            <div id="file-list"></div>
+            <button id="fetch-explanation">Get Explanation</button>
+        </div>
+
+        <!-- Chat interface -->
+        <div id="chat-container" hidden>
+            <div id="chat-window"></div>
+            <div id="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Type your message here...">
+                <button id="send-button" class="action-button">Send</button>
+            </div>
         </div>
     </div>
     <script src="panel.js"></script>
