@@ -1,6 +1,7 @@
 let session = null;
 let fileData = null;
 
+console.log('Initializing UI elements');
 // UI Elements
 const analyzeBuiltInButton = document.getElementById('analyze-built-in');
 const analyzeApiButton = document.getElementById('analyze-api');
@@ -25,10 +26,75 @@ const modal = document.getElementById('modal');
 let chatSession = null;
 let contextData = ''; // To hold additional context like files
 
+console.log('Adding helper functions');
+// Add these helper functions at the top with other utility functions
+function isGitHubFileUrl(url) {
+    console.log('Checking if URL is GitHub file:', url);
+    return url?.match(/^https:\/\/github\.com\/[^/]+\/[^/]+\/blob\/.+/);
+}
+
+function isGitHubRepoRoot(url) {
+    console.log('Checking if URL is GitHub repo root:', url);
+    // Matches either the repo root or /tree/branch pattern
+    return url?.match(/^https:\/\/github\.com\/[^/]+\/[^/]+(?:\/tree\/[^/]+)?$/);
+}
+
+// Add this function to update button visibility
+async function updateButtonVisibility() {
+    console.log('Updating button visibility');
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (!tab.url) {
+            console.log('No URL found in current tab');
+            return;
+        }
+
+        const isFile = isGitHubFileUrl(tab.url);
+        const isRepoRoot = isGitHubRepoRoot(tab.url);
+
+        console.log('URL analysis:', { isFile, isRepoRoot });
+
+        // Update button visibility based on URL
+        if (isFile) {
+            console.log('Showing file explanation button');
+            show(explainFileButton);
+            hide(analyzeBuiltInButton);
+            hide(analyzeApiButton);
+        } else if (isRepoRoot) {
+            console.log('Showing repo analysis buttons');
+            hide(explainFileButton);
+            show(analyzeBuiltInButton);
+            show(analyzeApiButton);
+        } else {
+            console.log('Hiding all buttons - not on relevant GitHub page');
+            // Hide all buttons if not in a relevant GitHub page
+            hide(explainFileButton);
+            hide(analyzeBuiltInButton);
+            hide(analyzeApiButton);
+        }
+    } catch (error) {
+        console.error('Error updating button visibility:', error);
+    }
+}
+
+console.log('Setting up event listeners');
+// Call updateButtonVisibility when the panel is opened
+document.addEventListener('DOMContentLoaded', updateButtonVisibility);
+
+// Listen for tab updates to refresh button visibility
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.url) {
+        console.log('Tab URL changed, updating button visibility');
+        updateButtonVisibility();
+    }
+});
+
 async function initializeAI() {
+    console.log('Initializing AI capabilities');
     try {
         const capabilities = await chrome.aiOriginTrial.languageModel.capabilities();
-        console.log(capabilities);
+        console.log('AI capabilities:', capabilities);
         if (capabilities.available !== 'readily') {
             const error = `AI model not available (state: "${capabilities.available}")`;
             console.error(error);
@@ -43,6 +109,7 @@ async function initializeAI() {
 }
 
 async function runPrompt(prompt) {
+    console.log('Running AI prompt');
     try {
         if (!session) {
             console.info('Creating new AI session');
@@ -60,7 +127,9 @@ async function runPrompt(prompt) {
 }
 
 async function reset() {
+    console.log('Resetting application state');
     if (session) {
+        console.log('Destroying AI session');
         await session.destroy();
         session = null;
     }
@@ -74,6 +143,7 @@ async function reset() {
 }
 
 async function analyzeRepo(useBuiltInModel) {
+    console.log(`Starting repository analysis with ${useBuiltInModel ? 'built-in model' : 'API'}`);
     try {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         
@@ -98,12 +168,13 @@ async function analyzeRepo(useBuiltInModel) {
         }
 
         // Extract repo data
+        console.log('Executing repo analyzer script');
         const [repoData] = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
             files: ['scripts/repoAnalyzer.js']
         });
 
-        console.log(repoData);
+        console.log('Raw repo data:', repoData);
 
         if (!repoData.result) {
             console.error('Repository data extraction failed');
@@ -133,17 +204,19 @@ async function analyzeRepo(useBuiltInModel) {
             3. Technical architecture (if infrastructure details are available)
             4. Getting started guide
         `;
-        console.log(prompt);
+        console.log('Generated prompt:', prompt.substring(0, 100) + '...');
         let response;
         if (useBuiltInModel) {
             // Use built-in model
-            console.log(prompt);
+            console.log('Using built-in AI model');
             response = await runPrompt(prompt);
         } else {
             // Send data to external API
+            console.log('Using external API');
             response = await analyzeWithApi(prompt);
         }
 
+        console.log('Got analysis response');
         showResults(response);
         show(resetButton);
 
@@ -160,6 +233,7 @@ async function analyzeRepo(useBuiltInModel) {
 }
 
 async function analyzeWithApi(prompt) {
+    console.log('Sending analysis request to API');
     // Replace with your API endpoint and API key
     const API_ENDPOINT = 'http://localhost:8082/analyze-with-gemini';
 
@@ -172,15 +246,18 @@ async function analyzeWithApi(prompt) {
     });
 
     if (!response.ok) {
+        console.error('API request failed:', response.status, response.statusText);
         throw new Error('Failed to get response from API');
     }
 
     const data = await response.json();
+    console.log('Received API response');
     return data;
 }
 
 // Updated function to explain the current file using GitHub API for fetching file content
 async function explainCurrentFile() {
+    console.log('Starting file explanation');
     try {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -197,12 +274,13 @@ async function explainCurrentFile() {
         hide(fileSelectionElement);
 
         // Get repository info and file path
+        console.log('Executing file analyzer script');
         const [result] = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
             files: ['scripts/fileAnalyzer.js']
         });
 
-        console.log(result);
+        console.log('File analyzer result:', result);
 
         if (!result || !result.result) {
             throw new Error('Failed to extract file data');
@@ -212,17 +290,21 @@ async function explainCurrentFile() {
         console.log('[Panel] File data:', fileData);
 
         // Fetch the raw content of the current file using the GitHub API
+        console.log('Fetching current file content');
         const currentFileContent = await fetchFileContent(fileData.owner, fileData.repo, fileData.branch, fileData.filePath);
 
         window.currentFileContent = currentFileContent;
 
         // Proceed with explanation immediately
+        console.log('Getting file explanation');
         await getExplanation([window.currentFileContent]);
 
         // After explanation, if there are additional files, offer the option to select them
+        console.log('Fetching repo files');
         const availableFiles = await fetchRepoFiles(fileData.owner, fileData.repo, fileData.branch);
 
         if (availableFiles.length > 0) {
+            console.log(`Found ${availableFiles.length} additional files`);
             fileData.availableFiles = availableFiles;
             show(additionalFilesPromptElement);
         }
@@ -245,8 +327,8 @@ async function explainCurrentFile() {
 
 // Function to fetch the raw content of a file using the GitHub API
 async function fetchFileContent(owner, repo, branch, filePath) {
+    console.log(`[Panel] Fetching content for ${filePath} in ${owner}/${repo}@${branch}`);
     try {
-        console.log(`[Panel] Fetching content for ${filePath} in ${owner}/${repo}@${branch}`);
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}?ref=${encodeURIComponent(branch)}`;
         const response = await fetch(url, {
             headers: {
@@ -269,8 +351,8 @@ async function fetchFileContent(owner, repo, branch, filePath) {
 
 // Function to fetch the list of files in the repository
 async function fetchRepoFiles(owner, repo, branch) {
+    console.log(`[Panel] Fetching repo files for ${owner}/${repo}@${branch}`);
     try {
-        console.log(`[Panel] Fetching repo files for ${owner}/${repo}@${branch}`);
         const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`;
         const response = await fetch(url);
         if (!response.ok) {
@@ -288,6 +370,7 @@ async function fetchRepoFiles(owner, repo, branch) {
 
 // Function to get the explanation from the AI model
 async function getExplanation(fileContents) {
+    console.log('Getting explanation for files');
     try {
         const combinedContent = fileContents.join('\n\n');
         const prompt = `
@@ -301,6 +384,7 @@ async function getExplanation(fileContents) {
         `;
 
         // Use built-in model for explanation
+        console.log('Running explanation prompt');
         const response = await runPrompt(prompt);
         showResults(response);
         show(resetButton);
@@ -315,6 +399,7 @@ async function getExplanation(fileContents) {
 
 // Populating the file list for selection
 function populateFileList(files) {
+    console.log('Populating file list with', files.length, 'files');
     fileListElement.innerHTML = '';
     files.forEach(file => {
         const checkbox = document.createElement('input');
@@ -336,6 +421,7 @@ function populateFileList(files) {
 
 // Event listener for the 'Select Additional Files' button
 additionalFilesButton.addEventListener('click', () => {
+    console.log('Additional files button clicked');
     populateFileList(fileData.availableFiles);
     show(fileSelectionElement);
     hide(additionalFilesPromptElement);
@@ -343,6 +429,7 @@ additionalFilesButton.addEventListener('click', () => {
 
 // Adjust the fetchExplanationButton event listener
 fetchExplanationButton.addEventListener('click', async () => {
+    console.log('Fetch explanation button clicked');
     try {
         show(loadingElement);
         hide(errorElement);
@@ -351,10 +438,13 @@ fetchExplanationButton.addEventListener('click', async () => {
         const selectedFiles = Array.from(fileListElement.querySelectorAll('input[type="checkbox"]:checked'))
             .map(checkbox => checkbox.value);
 
+        console.log('Selected additional files:', selectedFiles);
+
         // Fetch content of selected files
         const fileContents = [window.currentFileContent]; // Start with current file content
 
         if (selectedFiles.length > 0) {
+            console.log('Fetching content of selected files');
             const additionalContents = await Promise.all(selectedFiles.map(async (filePath) => {
                 return await fetchFileContent(fileData.owner, fileData.repo, fileData.branch, filePath);
             }));
@@ -362,6 +452,7 @@ fetchExplanationButton.addEventListener('click', async () => {
         }
 
         // Get combined explanation
+        console.log('Getting combined explanation');
         await getExplanation(fileContents);
 
     } catch (error) {
@@ -375,26 +466,31 @@ fetchExplanationButton.addEventListener('click', async () => {
 });
 
 function showError(message) {
+    console.error('Showing error:', message);
     errorElement.textContent = message;
     show(errorElement);
 }
 
 function showResults(response) {
+    console.log('Showing results');
     hide(loadingElement);
     analysisElement.textContent = response;
     show(resultsElement);
 }
 
 function show(element) {
+    console.log('Showing element:', element.id);
     element.removeAttribute('hidden');
 }
 
 function hide(element) {
+    console.log('Hiding element:', element.id);
     element.setAttribute('hidden', '');
 }
 
 // Function to start chat session
 function startChat() {
+    console.log('Starting chat session');
     hide(modal);
     show(chatContainer);
     show(resetButton);
@@ -413,6 +509,7 @@ async function sendMessage() {
     const userMessage = chatInput.value.trim();
     if (!userMessage) return;
 
+    console.log('Sending chat message');
     // Display user message
     addMessageToChat('User', userMessage);
     chatInput.value = '';
@@ -420,6 +517,7 @@ async function sendMessage() {
     try {
         // Initialize session if not already done
         if (!chatSession) {
+            console.log('Initializing chat session');
             chatSession = await chrome.aiOriginTrial.languageModel.create({
                 systemPrompt: 'You are a helpful assistant for GitHub repositories.'
             });
@@ -431,6 +529,7 @@ async function sendMessage() {
             prompt += `\n\nContext:\n${contextData}`;
         }
 
+        console.log('Sending message to AI');
         // Send message to AI model
         const response = await chatSession.prompt(prompt);
 
@@ -445,6 +544,7 @@ async function sendMessage() {
 
 // Function to add message to chat window
 function addMessageToChat(sender, message) {
+    console.log(`Adding ${sender} message to chat`);
     const messageElement = document.createElement('div');
     messageElement.classList.add('chat-message', sender.toLowerCase());
     messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
@@ -454,6 +554,7 @@ function addMessageToChat(sender, message) {
 
 // Function to reset chat
 function resetChat() {
+    console.log('Resetting chat');
     chatSession = null;
     chatWindow.innerHTML = '';
     hide(chatContainer);
@@ -463,6 +564,7 @@ function resetChat() {
 
 // Modify button event listeners to start chat
 analyzeBuiltInButton.addEventListener('click', async () => {
+    console.log('Analyze with built-in model clicked');
     try {
         await analyzeRepo(true); // Existing function
         startChat();
@@ -472,6 +574,7 @@ analyzeBuiltInButton.addEventListener('click', async () => {
 });
 
 analyzeApiButton.addEventListener('click', async () => {
+    console.log('Analyze with API clicked');
     try {
         await analyzeRepo(false); // Existing function
         startChat();
@@ -481,6 +584,7 @@ analyzeApiButton.addEventListener('click', async () => {
 });
 
 explainFileButton.addEventListener('click', async () => {
+    console.log('Explain file button clicked');
     try {
         await explainCurrentFile(); // Existing function
         startChat();

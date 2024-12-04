@@ -16,16 +16,16 @@
     "https://api.github.com/*"
   ],
   "action": {
-    "default_icon": "codex_extensions.png",
-    "icons": {
+    "default_icon": "codex_extensions.png"
+  },
+  "icons": {
     "16": "images/icon16.png",
     "19": "images/icon19.png",
     "32": "images/icon32.png",
     "38": "images/icon38.png",
     "48": "images/icon48.png",
     "128": "images/icon128.png"
-    }
-  },
+    },
   "background": {
     "service_worker": "background.js"
   },

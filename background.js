@@ -35,18 +35,29 @@ chrome.action.onClicked.addListener(async (tab) => {
 // Enable/disable extension icon based on URL
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete') {
-    const isGitHubRepo = tab.url?.startsWith('https://github.com/');
+    const isGitHubUrl = tab.url?.startsWith('https://github.com/');
+    const isGitHubFile = tab.url?.match(/^https:\/\/github\.com\/[^/]+\/[^/]+\/blob\/.+/);
+    const isGitHubRepo = tab.url?.match(/^https:\/\/github\.com\/[^/]+\/[^/]+(?:\/tree\/[^/]+)?$/);
+
+    // Enable the extension icon only on valid GitHub pages
+    const shouldEnable = isGitHubFile || isGitHubRepo;
+
     chrome.action.setIcon({
       path: {
-        "16": isGitHubRepo ? "images/icon16.png" : "images/icon16.png",
-        "19": isGitHubRepo ? "images/icon19.png" : "images/icon19.png",
-        "32": isGitHubRepo ? "images/icon32.png" : "images/icon32.png",
-        "38": isGitHubRepo ? "images/icon38.png" : "images/icon38.png",
-        "48": isGitHubRepo ? "images/icon48.png" : "images/icon48.png",
-        "128": isGitHubRepo ? "images/icon128.png" : "images/icon128.png"
+        "16": shouldEnable ? "images/icon16.png" : "images/icon16.png",
+        "19": shouldEnable ? "images/icon19.png" : "images/icon19.png",
+        "32": shouldEnable ? "images/icon32.png" : "images/icon32.png",
+        "38": shouldEnable ? "images/icon38.png" : "images/icon38.png",
+        "48": shouldEnable ? "images/icon48.png" : "images/icon48.png",
+        "128": shouldEnable ? "images/icon128.png" : "images/icon128.png"
       },
       tabId: tabId
     });
-    //chrome.action.setEnabled(tabId, isGitHubRepo);
+
+    if(shouldEnable) {
+      chrome.action.enable(tabId);
+    } else {
+      chrome.action.disable(tabId);
+    }
   }
 }); 

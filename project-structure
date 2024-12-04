@@ -1,8 +1,0 @@
-codex/
-├── manifest.json
-├── background.js
-├── sidepanel/
-│   ├── panel.html
-│   └── panel.js
-└── scripts/
-    └── repoAnalyzer.js 
